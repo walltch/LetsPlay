@@ -1,89 +1,44 @@
-import React, { useEffect, useState } from 'react';
-import useSocket from './hooks/UseSocket';
+import React, { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
+import Test from './components/test';
+const socket = io('http://localhost:4000');
 
-const SERVER_URL = 'http://localhost:3000';
+const App = () => {
+  const [words, setWords] = useState([]);
+  const [error, setError] = useState(null);
 
-function App() {
-    const socket = useSocket(SERVER_URL);
-    const [messages, setMessages] = useState([]);
-    const [message, setMessage] = useState('');
-    const [room, setRoom] = useState('');
-    const [userId, setUserId] = useState('');
+  useEffect(() => {
+    socket.on('randomWords', (data) => {
+      setWords(data);
+      setError(null);
+    });
 
-    useEffect(() => {
-        if (socket) {
-            socket.on('connect', () => {
-                setUserId(socket.id);
-                socket.emit('newUser', socket.id);
-            });
+    socket.on('error', (errorMessage) => {
+      setError(errorMessage);
+    });
 
-            socket.on('newUserConnected', (socketid) => {
-                console.log(`Nouvel utilisateur connecté : ${socketid}`);
-            });
-
-            socket.on('message', (msg, socketid) => {
-                setMessages((prevMessages) => [...prevMessages, { msg, socketid }]);
-            });
-
-            socket.on('join', (room, socketid) => {
-                console.log(`L'utilisateur ${socketid} a rejoint la room : ${room}`);
-            });
-
-            socket.on('userJoined', (room, socketid) => {
-                console.log(`L'utilisateur ${socketid} a rejoint la room : ${room}`);
-            });
-
-            socket.on('disconnect', () => {
-                console.log('User disconnected');
-            });
-        }
-    }, [socket]);
-
-    const handleSendMessage = () => {
-        if (socket) {
-            socket.emit('room', room, message, socket.id);
-            setMessage('');
-        }
+    return () => {
+      socket.off('randomWords');
+      socket.off('error');
     };
+  }, []);
 
-    const handleChangeRoom = (e) => {
-        const newRoom = e.target.value;
-        if (socket && newRoom !== room) {
-            socket.emit('leave', room);
-            socket.emit('join', newRoom);
-            setRoom(newRoom);
-        }
-    };
+  const fetchWords = () => {
+    socket.emit('fetchRandomWords');
+  };
 
-    return (
-        <div>
-            <h1>Scrabble Game</h1>
-            <div>
-                <p>Mon id : {userId}</p>
-                <input
-                    type="text"
-                    value={room}
-                    onChange={handleChangeRoom}
-                    placeholder="Enter room"
-                />
-                <input
-                    type="text"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Enter message"
-                />
-                <button onClick={handleSendMessage}>Send</button>
-            </div>
-            <div>
-                <h2>Messages</h2>
-                {messages.map((m, index) => (
-                    <p key={index}>
-                        {m.socketid}: {m.msg}
-                    </p>
-                ))}
-            </div>
-        </div>
-    );
-}
+  return (
+    <div>
+      <Test />
+      <button onClick={fetchWords}>Obtenir des mots</button>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+          {words.map((word, index) => (
+            <ul key={index}>
+              <li>{word}</li>
+            </ul>
+          ))}
+    </div>
+  );
+};
 
 export default App;
