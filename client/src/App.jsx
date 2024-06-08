@@ -1,11 +1,8 @@
 import React from 'react';
-import SignIn from './views/signIn';
-
+import AppRoutes from './routes/AppRoutes';
 
 export default function App() {
    return (
-      <div>
-         <SignIn />
-      </div>
+         <AppRoutes />
    );
 }

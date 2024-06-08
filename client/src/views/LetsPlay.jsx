@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Avatar from "@mui/material/Avatar";
-import useSocket from "./hooks/UseSocket";
+import useSocket from "../hooks/UseSocket";
 
-export default function WordsGame() {
+export default function LetsPlay() {
   const socket = useSocket();
   const [socketid, setSocketId] = useState("");
   const [connectedUser, setConnectedUser] = useState("");
