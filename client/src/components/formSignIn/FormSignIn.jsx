@@ -1,8 +1,21 @@
 import React from "react";
 import InputFormSignIn from "./InputFormSignIn";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function FormSignIn() {
-  console.log("formSignIn");
+  const navigate = useNavigate();
+  const [pseudo, setPseudo] = useState();
+  const [room, setRoom] = useState();
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = new FormData(e.target);
+    const pseudo = data.get("pseudo");
+    const room = data.get("room");
+    setPseudo(pseudo);
+    setRoom(room);
+    navigate(`/letsplay`);
+  }
     return (
       <>
         <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
@@ -18,7 +31,7 @@ export default function FormSignIn() {
           </div>
   
           <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-            <form className="space-y-6" action="#" method="POST">
+            <form className="space-y-6" method="POST" onSubmit={handleSubmit}>
               <InputFormSignIn name = "pseudo" placeholder = "Entrez votre pseudo"/>
               <InputFormSignIn name = "room" placeholder = "Entrez l'identifiant de la salle"/>
               <div>
