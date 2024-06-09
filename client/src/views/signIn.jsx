@@ -1,8 +1,8 @@
 import FormSignIn from "../components/formSignIn/FormSignIn";
-export default function SignIn() {
+export default function SignIn({socket}) {
   return (
     <>
-      <FormSignIn />
+      <FormSignIn socket={socket}/>
     </>
   );
 }
