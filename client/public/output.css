@@ -566,6 +566,14 @@ video {
   right: 0px;
 }
 
+.left-0 {
+  left: 0px;
+}
+
+.top-0 {
+  top: 0px;
+}
+
 .order-1 {
   order: 1;
 }

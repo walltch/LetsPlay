@@ -8,6 +8,7 @@ export default function LetsPlay({ socket }) {
   const [room, setRoom] = useState("");
   const [loading, setLoading] = useState(true);
   const [secondUser, setSecondUser] = useState("");
+  const [messages, setMessages] = useState([]);
 
   useEffect(() => {
     if (socket) {
@@ -26,9 +27,19 @@ export default function LetsPlay({ socket }) {
         handleConnect();
       }
 
+      socket.on("newUser", (socketid, pseudo) => {
+        setSecondUser(pseudo + "  " + "viens de rejoindre la salle");
+      });
+
+      socket.on("message", (message) => {
+        setMessages((prevMessages) => [...prevMessages, message]);
+      });
+
       return () => {
         socket.off("connect", handleConnect);
         socket.off("myConnexion");
+        socket.off("newUser");
+        socket.off("message");
       };
     } else {
       console.log("Socket is not defined");
@@ -49,7 +60,11 @@ export default function LetsPlay({ socket }) {
     e.preventDefault();
     const message = e.target.message.value;
     if (message && socket) {
-      socket.emit("sendMessage", message);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { sender: "me", message },
+      ]);
+      socket.emit("sendMessage", message, room);
       e.target.message.value = "";
     }
   };
@@ -60,7 +75,8 @@ export default function LetsPlay({ socket }) {
 
   return (
     <div className="flex h-screen">
-      <div className="flex w-2/3 bg-black">
+      <div className="w-2/3 bg-black">
+        <h1 className="color-white text-white text-center">Room ID: {room}</h1>
       </div>
       <div className="flex flex-col w-1/3 h-full p-10 justify-between">
         <div className="flex sm:items-center justify-between py-3 border-b-2 border-gray-200">
@@ -74,8 +90,8 @@ export default function LetsPlay({ socket }) {
               <Avatar src="/broken-image.jpg" />
             </div>
             <div className="flex flex-col leading-tight">
-              <span className="text-lg text-gray-600">#{pseudo}</span>
-              <span className="text-lg text-gray-600">#{room}</span>
+              <span className="text-lg text-gray-600">{pseudo}</span>
+              <span className="text-lg text-gray-600">#{socket.id}</span>
             </div>
           </div>
         </div>
@@ -84,33 +100,43 @@ export default function LetsPlay({ socket }) {
           className="flex flex-col space-y-4 p-3 overflow-y-auto scrollbar-thumb-blue scrollbar-thumb-rounded scrollbar-track-blue-lighter scrollbar-w-2 scrolling-touch"
         >
           <span className="text-sm text-gray-600 text-center">
-            Vous êtes connecté avec l'id : {socket.id}
+            Vous avez rejoint la salle.
           </span>
-          <div className="chat-message">
-            <div className="flex items-end">
-              <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 order-2 items-start">
-                <div>
-                  <span className="px-4 py-2 rounded-lg inline-block rounded-bl-none bg-gray-300 text-gray-600">
-                    Can be verified on any platform using docker
-                  </span>
+          <span className="text-sm text-gray-600 text-center">
+            {secondUser}
+          </span>
+          {messages.map(({ sender, message }, index) => (
+            <div
+              key={index}
+              className={`chat-message flex items-end ${
+                sender === "me" ? "justify-end" : ""
+              }`}
+            >
+              {sender === "me" ? (
+                <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 order-1 items-end">
+                  <div>
+                    <span className="px-4 py-2 rounded-lg inline-block rounded-br-none bg-blue-600 text-white">
+                      {message}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <Avatar src="/broken-image.jpg" />
-            </div>
-          </div>
-          <div className="chat-message">
-            <div className="flex items-end justify-end">
-              <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 order-1 items-end">
-                <div>
-                  <span className="px-4 py-2 rounded-lg inline-block rounded-br-none bg-blue-600 text-white">
-                    Your error message says permission denied, npm global
-                    installs must be given root privileges.
-                  </span>
+              ) : (
+                <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 order-2 items-start">
+                  <div>
+                    <span
+                      className={`px-4 py-2 rounded-lg inline-block ${
+                        sender !== "me"
+                          ? "rounded-bl-none bg-gray-300 text-gray-600"
+                          : "bg-blue-600 text-white"
+                      }`}
+                    >
+                      {message}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <Avatar src="/broken-image.jpg" />
+              )}
             </div>
-          </div>
+          ))}
         </div>
         <div className="border-t-2 border-gray-200 px-4 pt-4 mb-2 sm:mb-0">
           <form className="relative flex" onSubmit={handleSubmit}>
@@ -118,7 +144,7 @@ export default function LetsPlay({ socket }) {
               name="message"
               id="message"
               type="text"
-              placeholder="Entrez votre message"
+              placeholder="Enter your message"
               className="w-full focus:outline-none focus:placeholder-gray-400 text-gray-600 placeholder-gray-600 pl-12 bg-gray-200 rounded-md py-3"
             />
             <div className="absolute right-0 items-center inset-y-0 hidden sm:flex">
@@ -126,7 +152,7 @@ export default function LetsPlay({ socket }) {
                 type="submit"
                 className="inline-flex items-center justify-center rounded-lg px-4 py-3 transition duration-500 ease-in-out text-white bg-blue-500 hover:bg-blue-400 focus:outline-none"
               >
-                <span className="font-bold">Envoyer</span>
+                <span className="font-bold">Send</span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"

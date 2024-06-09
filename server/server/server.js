@@ -16,39 +16,51 @@ const io = new Server(server, {
 
 app.use(cors());
 
-let userConnections = [];
+let rooms = {};
 
 io.on("connection", (socket) => {
   socket.on("loginDetails", ({ pseudo, room }) => {
-    socket.emit("myConnexion", pseudo, room);
-    socket.join(room);
+    // Check if the room exists, if not, create it
+    if (!rooms[room]) {
+      rooms[room] = [];
+    }
+
+    // If room has less than 2 users, allow user to join
+    if (rooms[room].length < 2) {
+      rooms[room].push({ id: socket.id, pseudo });
+      socket.room = room; // Storing room ID in socket object
+      socket.emit("myConnexion", pseudo, room);
+      socket.join(room);
+
+      // Notify other user in the room about new user
+      socket.broadcast.to(room).emit("newUser", socket.id, pseudo);
+    } else {
+      // Notify user that the room is full
+      socket.emit("roomFull", room);
+    }
+
+    if (rooms[room].length === 1) {
+      socket.broadcast.to(room).emit("waiting", room);
+    }
   });
 
-  socket.on("newUser", (socketid) => {
-    userConnections.push(socketid);
-    console.log("new user connected", socketid);
-    socket.broadcast.emit("newUserConnected", socketid);
+  socket.on("sendMessage", (message) => {
+    const room = socket.room; // Get the room ID directly
+    const sender = socket.id[0]; // Using only the first letter of socket ID
+
+    // Emit the message to the other user in the room
+    socket.to(room).emit("message", { sender, message });
   });
 
   socket.on("disconnect", () => {
-    console.log("user disconnected", socket.id);
-    userConnections = userConnections.filter((id) => id !== socket.id);
-    socket.broadcast.emit("user disconnected", socket.id);
-  });
-
-  socket.on("join", (room) => {
-    socket.join(room);
-    io.to(room).emit("join", room, socket.id);
-  });
-
-  socket.on("leave", (room) => {
-    console.log("leave room: " + room);
-    socket.leave(room);
-    io.to(room).emit("leave", room);
+    // Remove the disconnected user from the room
+    for (const room in rooms) {
+      rooms[room] = rooms[room].filter((user) => user.id !== socket.id);
+    }
   });
 });
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
+  console.log(`Server started on port ${PORT}`);
 });
